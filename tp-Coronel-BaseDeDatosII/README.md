@@ -34,10 +34,11 @@ tp-Coronel-BaseDeDatosII/
 - [x] **Parte 3** `docs/ejercicio_lectura_critica.md` — análisis y corrección de 2 scripts IA peligrosos (UPDATE sin WHERE, NOT IN con NULL)
 - [x] `db/schema.sql` — esquema base FoodStore
 - [x] `AGENTS.md` — convenciones (chk_*, fk_*, ON DELETE RESTRICT, activo BOOLEAN)
-- [ ] **TP4 Parte 1** `docs/optimizacion_tp4_parte1.md` — laboratorio joins analíticos (2 consultas >=3 tablas, EXPLAIN ANALYZE, tabla comparativa Consulta | Algoritmo join antes | Cambio | Algoritmo después | Mejora)
-- [ ] **TP4 Parte 2** `docs/lectura_critica_tp4_parte2.md` — lectura crítica nodos join (externa/interna Nested Loop, Hash build/probe, Merge, cost vs actual time)
-- [ ] **TP4 Parte 3** `db/consultas_tp4_parte3.sql` — specs precisas ranking ventana + subconsulta correlacionada con verificación EXCEPT bidireccional
-- [ ] **TP4 Parte 4** `docs/competencia_tp4_parte4.md` + `docs/DUIA_TP4.md` — competencia (Equipo | Estrategia | Tiempo antes/despues | Mejora x) y DUIA (Herramienta | Para qué | Prompt | Aceptado/descartado)
+- [x] **TP4 Parte 1** `docs/optimizacion_tp4_parte1.md` — laboratorio joins analíticos (2 consultas >=3 tablas, EXPLAIN ANALYZE, tabla comparativa Consulta | Algoritmo join antes | Cambio | Algoritmo después | Mejora)
+- [x] **TP4 Parte 2** `docs/lectura_critica_tp4_parte2.md` — lectura crítica nodos join (externa/interna Nested Loop, Hash build/probe, Merge, cost vs actual time)
+- [x] **TP4 Parte 3** `db/consultas_tp4_parte3.sql` — specs precisas ranking ventana + subconsulta correlacionada con verificación EXCEPT bidireccional
+- [x] **TP4 Parte 4** `docs/competencia_tp4_parte4.md` + `docs/DUIA_TP4.md` — competencia (Equipo | Estrategia | Tiempo antes/despues | Mejora x) y DUIA (Herramienta | Para qué | Prompt | Aceptado/descartado)
+- [x] **TP4 Informe** `docs/INFORME_COMPLETO_TP4.md` — informe canónico UTN Semana 4 (936L / 87k, §0–§10, planes sintéticos verosímiles, cost 8124→4890, Execution 180→45ms)
 
 ## Quickstart
 
