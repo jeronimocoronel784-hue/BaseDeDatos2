@@ -2,7 +2,7 @@
 
 ## Repository Overview
 - **Type:** PostgreSQL database schema definition project.
-- **Core File:** `tp-Coronel-BaseDeDatosII/db/schema.sql` — contains all DDL statements, custom types, tables, constraints, and indexes.
+- **Core File:** `db/schema.sql` — contains all DDL statements, custom types, tables, constraints, and indexes.
 
 ## Database Design Conventions
 - **Dialect:** PostgreSQL (`BIGINT GENERATED ALWAYS AS IDENTITY`, custom `CREATE TYPE ... AS ENUM`, `TIMESTAMPTZ`).

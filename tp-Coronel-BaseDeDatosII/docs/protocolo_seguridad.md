@@ -1,18 +1,18 @@
-# Protocolo de Seguridad — Base de Datos II — Unidad 1 Semana 2
+﻿# Protocolo de Seguridad — Base de Datos II — Unidad 1 Semana 2
 
 > **Universidad Tecnológica Nacional (UTN) — Tecnicatura Universitaria en Programación**
 > **Asignatura:** Base de Datos II — Unidad 1 Semana 2 (Concurrencia e IA como motor primario)
 > **Autor:** Jerónimo Coronel
 > **Fecha:** 2026-09-03
 > **Motor:** PostgreSQL 16 local (psql / pg_dump / createdb)
-> **Esquema base:** `squema.sql` (FoodStore: categoria, cliente, producto, pedido, detalle_pedido)
+> **Esquema base:** `db/schema.sql` (FoodStore: categoria, cliente, producto, pedido, detalle_pedido)
 > **Estado:** Commiteado **antes** de Parte 1 — commit previo a `restricciones_foodstore.sql`
 
 ---
 
 ## 0. Principio rector
 
-**Nunca se trabaja sobre la base de producción.** Todo DDL y todo DML —sobre todo si fue generado por IA— se prueba primero en una **copia aislada**. Cada cambio se ejecuta dentro de una **transacción explícita** con verificación previa (`SELECT`/`COUNT(*)`) y `ROLLBACK` antes del `COMMIT` definitivo. Cada sesión de trabajo arranca con un **respaldo físico versionado** en `backups/`.
+**Nunca se trabaja sobre la base de producción.** Todo DDL y todo DML —sobre todo si fue generado por IA— se prueba primero en una **copia aislada**. Cada cambio se ejecuta dentro de una **transacción explícita** con verificación previa (`SELECT`/`COUNT(*)`) y `ROLLBACK` antes del `COMMIT` definitivo. Cada sesión de trabajo arranca con un **respaldo físico versionado** en `db/backups/`.
 
 > Si no hay backup, no hay DDL. Si no hay transacción, no hay DML.
 
@@ -22,27 +22,29 @@
 
 | Paso cátedra | Qué pide la cátedra | Adaptación concreta — entorno PostgreSQL local del alumno | Comando exacto |
 |---|---|---|---|
-| **1. Copia** | Trabajar sobre una copia, nunca sobre producción | Se mantiene `foodstore_original` como BD inmutable (solo se restaura desde `squema.sql`). Cada jornada de trabajo se clona a `foodstore_trabajo` con `createdb -T` (copia por template, instantánea y barata). Si `foodstore_trabajo` ya existe se dropea y recrea. | `createdb -T foodstore_original foodstore_trabajo` <br> Si ya existe: `dropdb --if-exists foodstore_trabajo; createdb -T foodstore_original foodstore_trabajo` <br> Crear original la primera vez: `createdb foodstore_original && psql -d foodstore_original -f squema.sql` |
-| **2. Transacción** | Probar dentro de transacción y verificar antes de confirmar | Todo DDL/DML generado por IA se envuelve en `BEGIN; ... ROLLBACK;` para inspeccionar, y solo después se re-ejecuta con `COMMIT`. Flujo obligatorio: `BEGIN;` → `SELECT COUNT(*)` previo → DML/DDL → `SELECT COUNT(*)` posterior → `ROLLBACK;` (verificación) → repetir con `COMMIT` si es correcto. | `psql -d foodstore_trabajo -c "BEGIN; UPDATE producto SET stock = stock -1 WHERE id_producto=1; SELECT * FROM producto WHERE id_producto=1; ROLLBACK;"` <br> Para scripts: `psql -d foodstore_trabajo` → `BEGIN; \i restricciones_foodstore.sql` → verificar → `ROLLBACK;` / `COMMIT;` |
-| **3. Respaldo** | Respaldo antes de cada cambio relevante | Antes de **cada DDL** y antes de **cada DML generado por IA** se toma un dump custom comprimido con `pg_dump -Fc`. Se guarda versionado por fecha en `backups/`. Retención mínima: último backup diario + backup previo a cada entrega. | `mkdir -p backups` <br> `pg_dump -Fc -f backups/foodstore_trabajo_20260903.dump foodstore_trabajo` <br> Restaurar si hace falta: `pg_restore -d foodstore_trabajo backups/foodstore_trabajo_20260903.dump` <br> Alternativa texto plano: `pg_dump -f backups/foodstore_trabajo_20260903.sql foodstore_trabajo` |
+| **1. Copia** | Trabajar sobre una copia, nunca sobre producción | Se mantiene `foodstore_original` como BD inmutable (solo se restaura desde `db/schema.sql`). Cada jornada de trabajo se clona a `foodstore_trabajo` con `createdb -T` (copia por template, instantánea y barata). Si `foodstore_trabajo` ya existe se dropea y recrea. | `createdb -T foodstore_original foodstore_trabajo` <br> Si ya existe: `dropdb --if-exists foodstore_trabajo; createdb -T foodstore_original foodstore_trabajo` <br> Crear original la primera vez: `createdb foodstore_original && psql -d foodstore_original -f db/schema.sql` |
+| **2. Transacción** | Probar dentro de transacción y verificar antes de confirmar | Todo DDL/DML generado por IA se envuelve en `BEGIN; ... ROLLBACK;` para inspeccionar, y solo después se re-ejecuta con `COMMIT`. Flujo obligatorio: `BEGIN;` → `SELECT COUNT(*)` previo → DML/DDL → `SELECT COUNT(*)` posterior → `ROLLBACK;` (verificación) → repetir con `COMMIT` si es correcto. | `psql -d foodstore_trabajo -c "BEGIN; UPDATE producto SET stock = stock -1 WHERE id_producto=1; SELECT * FROM producto WHERE id_producto=1; ROLLBACK;"` <br> Para scripts: `psql -d foodstore_trabajo` → `BEGIN; \i db/restricciones_foodstore.sql` → verificar → `ROLLBACK;` / `COMMIT;` |
+| **3. Respaldo** | Respaldo antes de cada cambio relevante | Antes de **cada DDL** y antes de **cada DML generado por IA** se toma un dump custom comprimido con `pg_dump -Fc`. Se guarda versionado por fecha en `db/backups/`. Retención mínima: último backup diario + backup previo a cada entrega. | `mkdir -p db/backups` <br> `pg_dump -Fc -f db/backups/foodstore_trabajo_20260903.dump foodstore_trabajo` <br> Restaurar si hace falta: `pg_restore -d foodstore_trabajo db/backups/foodstore_trabajo_20260903.dump` <br> Alternativa texto plano: `pg_dump -f db/backups/foodstore_trabajo_20260903.sql foodstore_trabajo` |
 
 ---
 
 ## 2. Dónde viven los respaldos
 
 ```
-BaseDeDatos2/
-├── squema.sql
-├── protocolo_seguridad.md        ← este archivo
-├── restricciones_foodstore.sql
-├── backups/                      ← TODOS los dumps van acá (no en la raíz)
-│   ├── foodstore_trabajo_20260903.dump   # dump custom (-Fc) diario
-│   ├── foodstore_trabajo_20260903.sql    # opcional texto plano
-│   └── foodstore_original_20260903.dump  # copia inmutable de referencia
+tp-Coronel-BaseDeDatosII/
+├── db/
+│   ├── schema.sql
+│   ├── restricciones_foodstore.sql
+│   └── backups/                      ← TODOS los dumps van acá
+│       ├── foodstore_trabajo_20260903.dump   # dump custom (-Fc) diario
+│       ├── foodstore_trabajo_20260903.sql    # opcional texto plano
+│       └── foodstore_original_20260903.dump  # copia inmutable de referencia
+├── docs/
+│   └── protocolo_seguridad.md        ← este archivo (rutas relativas a tp-Coronel-BaseDeDatosII)
 └── ...
 ```
 
-- `backups/` está en `.gitignore` si los dumps superan 50 MB; si no, se commitean los `.sql` livianos. Los `.dump` binarios grandes **no** se pushean.
+- `db/backups/` está en `.gitignore` si los dumps superan 50 MB; si no, se commitean los `.sql` livianos. Los `.dump` binarios grandes **no** se pushean.
 - Nomenclatura obligatoria: `foodstore_trabajo_YYYYMMDD.dump` (ej: `20260903`). Si hay dos en el día: `20260903_1430.dump`.
 - Antes de cada `git push` verificar que no se suban credenciales en dumps.
 
@@ -57,13 +59,13 @@ BaseDeDatos2/
 dropdb --if-exists foodstore_trabajo; createdb -T foodstore_original foodstore_trabajo
 
 # 2. Respaldo previo
-mkdir -p backups
-pg_dump -Fc -f backups/foodstore_trabajo_20260903_preDDL.dump foodstore_trabajo
+mkdir -p db/backups
+pg_dump -Fc -f db/backups/foodstore_trabajo_20260903_preDDL.dump foodstore_trabajo
 
 # 3. Ejecutar DDL dentro de transacción y verificar
 psql -d foodstore_trabajo <<'SQL'
 BEGIN;
-\i restricciones_foodstore.sql
+\i db/restricciones_foodstore.sql
 -- Verificación: las 3 reglas existen
 SELECT conname, contype FROM pg_constraint WHERE conname LIKE 'chk_%' ORDER BY conname;
 SELECT tgname FROM pg_trigger WHERE tgname LIKE 'trg_%' ORDER BY tgname;
@@ -73,10 +75,10 @@ ROLLBACK;
 SQL
 
 # 4. Solo cuando la verificación dio OK:
-psql -d foodstore_trabajo -c "BEGIN; \i restricciones_foodstore.sql; COMMIT;"
+psql -d foodstore_trabajo -c "BEGIN; \i db/restricciones_foodstore.sql; COMMIT;"
 
 # 5. Respaldo posterior
-pg_dump -Fc -f backups/foodstore_trabajo_20260903_postDDL.dump foodstore_trabajo
+pg_dump -Fc -f db/backups/foodstore_trabajo_20260903_postDDL.dump foodstore_trabajo
 ```
 
 **Regla de oro DDL:** ningún `ALTER TABLE`, `CREATE TRIGGER`, `DROP CONSTRAINT` se ejecuta fuera de `BEGIN/COMMIT` ni sin el dump previo. El archivo `restricciones_foodstore.sql` ya viene idempotente (`DROP IF EXISTS` / `IF NOT EXISTS`) justamente para poder re-ejecutarlo en este flujo.
@@ -89,7 +91,7 @@ pg_dump -Fc -f backups/foodstore_trabajo_20260903_postDDL.dump foodstore_trabajo
 
 ```bash
 # 1. Respaldo (si no se hizo ya en esta sesión)
-pg_dump -Fc -f backups/foodstore_trabajo_20260903_preDML.dump foodstore_trabajo
+pg_dump -Fc -f db/backups/foodstore_trabajo_20260903_preDML.dump foodstore_trabajo
 
 # 2. Transacción con sonda previa y posterior
 psql -d foodstore_trabajo <<'SQL'
@@ -122,7 +124,7 @@ psql -d foodstore_trabajo -c "SELECT count(*) FROM producto WHERE activo=FALSE;"
 - [ ] ¿Maneja `NULL` correctamente? (`NOT IN` vs `NOT EXISTS`, `col IS NOT NULL`)
 - [ ] ¿Respeta `ON DELETE RESTRICT` y el borrado lógico (`activo`)?
 - [ ] ¿Se probó con `BEGIN; ... ROLLBACK;` y `SELECT COUNT(*)` antes/después?
-- [ ] ¿Hay backup en `backups/` con timestamp de hoy?
+- [ ] ¿Hay backup en `db/backups/` con timestamp de hoy?
 
 Si alguna respuesta es "no", no se hace `COMMIT`.
 
@@ -133,11 +135,11 @@ Si alguna respuesta es "no", no se hace `COMMIT`.
 | Prohibido | Obligatorio |
 |---|---|
 | `psql -d foodstore_original -c "UPDATE ..."` | `psql -d foodstore_trabajo -c "UPDATE ..."` |
-| `psql -d foodstore_original -f restricciones_foodstore.sql` | `psql -d foodstore_trabajo -f restricciones_foodstore.sql` |
+| `psql -d foodstore_original -f db/restricciones_foodstore.sql` | `psql -d foodstore_trabajo -f db/restricciones_foodstore.sql` |
 | `DROP TABLE` / `DELETE FROM categoria` sin `WHERE` en original | `BEGIN; DELETE ...; ROLLBACK;` primero en copia |
-| Pushear dumps con datos sensibles | Pushear solo `.sql` de esquema + `backups/*.dump` ignorado |
+| Pushear dumps con datos sensibles | Pushear solo `.sql` de esquema + `db/backups/*.dump` ignorado |
 
-`foodstore_original` es **solo lectura**. Se restaura únicamente desde `squema.sql` o desde un dump etiquetado como `_original`. Cualquier experimento destructivo va contra `foodstore_trabajo`.
+`foodstore_original` es **solo lectura**. Se restaura únicamente desde `db/schema.sql` o desde un dump etiquetado como `_original`. Cualquier experimento destructivo va contra `foodstore_trabajo`.
 
 ---
 
@@ -162,7 +164,7 @@ git log --oneline --all
 git show HEAD:protocolo_seguridad.md | head -20
 # debe devolver este encabezado UTN
 
-ls -lh backups/
+ls -lh db/backups/
 # debe listar al menos un .dump previo a Parte 1
 ```
 
@@ -173,12 +175,12 @@ ls -lh backups/
 ```bash
 # Setup inicial (una sola vez)
 createdb foodstore_original
-psql -d foodstore_original -f squema.sql
-pg_dump -Fc -f backups/foodstore_original_20260903.dump foodstore_original
+psql -d foodstore_original -f db/schema.sql
+pg_dump -Fc -f db/backups/foodstore_original_20260903.dump foodstore_original
 
 # Trabajo diario
 dropdb --if-exists foodstore_trabajo; createdb -T foodstore_original foodstore_trabajo
-mkdir -p backups; pg_dump -Fc -f backups/foodstore_trabajo_20260903.dump foodstore_trabajo
+mkdir -p db/backups; pg_dump -Fc -f db/backups/foodstore_trabajo_20260903.dump foodstore_trabajo
 psql -d foodstore_trabajo -c "BEGIN; -- tu DDL/DML acá; ROLLBACK;"
 
 # Ver qué bases existen
@@ -192,3 +194,6 @@ psql -d foodstore_trabajo -c "SELECT pid, wait_event_type, wait_event, query FRO
 ---
 
 *Documento defendible oralmente línea por línea. Cada comando fue probado en PostgreSQL 16 + psql. Cualquier desvío del protocolo invalida la entrega de la Parte correspondiente.*
+
+
+
